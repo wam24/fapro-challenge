@@ -4,22 +4,23 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException
-import uvicorn
 
 MONTH_IN_SPANISH = {
-"Jan": 'Ene',
-"Feb": "Feb",
-"Mar": "Mar",
-"Apr": "Abr",
-"May": "May",
-"Jun": 'Jun',
-"Jul": 'Jul',
-"Aug": 'Ago',
-"Sep": 'Sep',
-"Oct": 'Oct',
-"Nov": 'Nov',
-"Dec": 'Dic'
-} 
+    "Jan": 'Ene',
+    "Feb": "Feb",
+    "Mar": "Mar",
+    "Apr": "Abr",
+    "May": "May",
+    "Jun": 'Jun',
+    "Jul": 'Jul',
+    "Aug": 'Ago',
+    "Sep": 'Sep',
+    "Oct": 'Oct',
+    "Nov": 'Nov',
+    "Dec": 'Dic'
+}
+
+
 def get_data_table(date):
     if isinstance(date, str):
         date = check_date(date)
@@ -29,29 +30,29 @@ def get_data_table(date):
     if status_code == 404:
         return "No se pudo obtener información, el año que busca no existe"
     elif status_code == 200:
-    # Crear un objeto BeautifulSoup con el contenido HTML
+        # Crear un objeto BeautifulSoup con el contenido HTML
         soup = BeautifulSoup(page_html, 'html.parser')
 
-        # Buscar la tabla HTML en el objeto BeautifulSoup
         month_name = date.strftime("%b")
+        # Buscar la tabla HTML en el objeto BeautifulSoup
         tabla = soup.find("div", id="mes_all")
         # Imprimir la tabla HTML
         table_html = str(tabla.table)
-        dfs = pd.read_html(table_html)[0]
+        html_to_dataframe = pd.read_html(table_html)[0]
         month_filter = MONTH_IN_SPANISH.get(month_name)
         day_filter = (date - timedelta(days=1)).day
-        data_info = dfs.get(month_filter).get(day_filter)
-        return  data_info if not pd.isna(data_info) else 'La fecha suministrada no cuenta con datos disponibles'
-    
+        data_info = html_to_dataframe.get(month_filter).get(day_filter)
+        return data_info if not pd.isna(data_info) else 'La fecha suministrada no cuenta con datos disponibles'
+
 
 def check_date(date_str):
     # Lista de formatos de fecha
     formats = ['%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']
 
-    for format in formats:
+    for format_date in formats:
         try:
             # Convertir el string en un objeto datetime
-            date = datetime.strptime(date_str, format)
+            date = datetime.strptime(date_str, format_date)
             return date
         except ValueError:
             pass
@@ -59,13 +60,14 @@ def check_date(date_str):
     # Si no se pudo convertir con ningún formato, devolver None
     return None
 
+
 app = FastAPI()
 
+
 @app.get("/sii")
-async def fetch_sii(date: str ):
+async def fetch_sii(date: str):
     year_now = datetime.today().year
     if not check_date(date):
-        print('entra')
         raise HTTPException(status_code=400, detail="Debe colocar un formato de fecha. Ej: dd/mm/yyyy")
     else:
         date = check_date(date)
@@ -75,4 +77,3 @@ async def fetch_sii(date: str ):
             raise HTTPException(status_code=400, detail=f"La fecha debe ser menor o igual al {year_now}")
 
     return get_data_table(date)
-

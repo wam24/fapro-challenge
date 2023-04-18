@@ -1,8 +1,0 @@
-Para probar en local:
-La url de la api es: localhost:[port]/sii
-La url recibe un queryparams llamado:date
-Ej. 127.0.0.1:8000/sii?date=28-04-2023
-El servidor se inicia con el siguiente comando: uvicorn main:app 
-La petición es un metodo GET
-
-
