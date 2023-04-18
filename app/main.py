@@ -48,7 +48,8 @@ def get_data_table(date):
 def check_date(date_str):
     # Lista de formatos de fecha
     formats = ['%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']
-
+    if not isinstance(date_str, str):
+        return None
     for format_date in formats:
         try:
             # Convertir el string en un objeto datetime
@@ -65,15 +66,19 @@ app = FastAPI()
 
 
 @app.get("/sii")
-async def fetch_sii(date: str):
-    year_now = datetime.today().year
-    if not check_date(date):
+async def fetch_sii(date: str | None = None):
+    today = datetime.today()
+    year_now = today.year
+    if date and not check_date(date):
         raise HTTPException(status_code=400, detail="Debe colocar un formato de fecha. Ej: dd/mm/yyyy")
     else:
         date = check_date(date)
-        if date.year < 2013:
-            raise HTTPException(status_code=400, detail="La fecha debe ser mayor a 2012")
-        elif date.year > year_now:
-            raise HTTPException(status_code=400, detail=f"La fecha debe ser menor o igual al {year_now}")
+        if date:
+            if date.year < 2013:
+                raise HTTPException(status_code=400, detail="La fecha debe ser mayor a 2012")
+            elif date.year > year_now:
+                raise HTTPException(status_code=400, detail=f"La fecha debe ser menor o igual al {year_now}")
 
-    return get_data_table(date)
+            return get_data_table(date)
+    raise HTTPException(status_code=400,
+                        detail=f"Debe especificar la fecha en la url, Ej. /sii?date={datetime.strftime(today, '%d/%m/%Y')}")
